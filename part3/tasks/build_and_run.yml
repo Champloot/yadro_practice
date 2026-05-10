@@ -1,0 +1,45 @@
+---
+- name: Create temporary build directory
+  file:
+    path: "{{ work_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Docker build files to the host
+  copy:
+    src: "files/{{ item }}"
+    dest: "{{ work_dir }}/{{ item }}"
+    mode: '0644'
+  loop:
+    - Dockerfile
+    - http_checker.py
+    - requirements.txt
+
+- name: Build Docker image "{{ image_name }}"
+  docker_image:
+    name: "{{ image_name }}"
+    tag: latest
+    build:
+      path: "{{ work_dir }}"
+    source: build
+    state: present
+
+- name: Remove existing container if present
+  docker_container:
+    name: "{{ container_name }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Run container "{{ container_name }}" and wait for completion
+  docker_container:
+    name: "{{ container_name }}"
+    image: "{{ image_name }}:latest"
+    state: started
+    auto_remove: no
+    detach: no
+  register: container_run
+
+- name: Verify container exit code is 0
+  fail:
+    msg: "Container exited with non-zero code ({{ container_run.container.State.ExitCode }})"
+  when: container_run.container.State.ExitCode != 0

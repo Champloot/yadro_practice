@@ -1,0 +1,52 @@
+---
+- name: Remove any conflicting Docker CE packages (if present)
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+    state: absent
+    autoremove: yes
+
+- name: Install required system packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-docker
+    state: present
+    update_cache: yes
+
+- name: Install Docker (from official distro repositories)
+  apt:
+    name:
+      - docker.io
+      - containerd
+      - docker-compose-v2
+    state: present
+    update_cache: yes
+
+- name: Start and enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add user '{{ docker_user }}' to the docker group
+  user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: yes
+  notify: Session re-login advisory
+
+- name: Verify Docker installation (version)
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Print Docker version
+  debug:
+    msg: "Docker version installed: {{ docker_version.stdout }}"

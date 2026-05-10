@@ -1,0 +1,19 @@
+---
+- name: Fetch container logs (stdout and stderr)
+  command: docker logs {{ container_name }}
+  register: container_logs
+  changed_when: false
+
+- name: Print container stdout
+  debug:
+    msg: "{{ container_logs.stdout_lines }}"
+
+- name: Print container stderr (error messages)
+  debug:
+    msg: "{{ container_logs.stderr_lines }}"
+  when: container_logs.stderr_lines | length > 0
+
+- name: Remove temporary build directory
+  file:
+    path: "{{ work_dir }}"
+    state: absent

@@ -1,0 +1,26 @@
+---
+- name: "Part 3 of yadro practice"
+  hosts: targets
+  gather_facts: yes
+  become: yes
+  vars:
+    docker_user: "{{ ansible_user_id }}"
+    image_name: http-checker
+    container_name: http-checker-test
+    work_dir: /tmp/http-checker-build
+
+  tasks:
+    - name: Install Docker and dependencies
+      import_tasks: tasks/install_docker.yml
+
+    - name: Build image and run container
+      import_tasks: tasks/build_and_run.yml
+
+    - name: Verify logs amd clean up
+      import_tasks: tasks/verify_and_cleanup.yml
+  handlers:
+    - name: Session re-login advisory
+      debug:
+        msg: >
+          User {{ docker_user }} has been added to the 'docker' group.
+          To apply changes, log out and back in or run 'newgrp docker'.
